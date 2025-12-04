@@ -3,44 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUZI CLOUD - Password Protected Upload</title>
+    <title>SUZI CLOUD - Cool Glass Upload</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for the result display */
+        /* Custom styles for the Glassmorphism effect */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Switched to a soft, misty green gradient */
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
+            position: relative;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* --- Haze/Fog Animation (Farthest Back) --- */
+        .haze-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0; /* Layer 0, behind everything */
+            overflow: hidden;
+        }
+
+        .haze-blob {
+            position: absolute;
+            width: 200vw;
+            height: 200vh;
+            border-radius: 50%; /* Large circle */
+            /* Subtle white radial gradient */
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 60%);
+            filter: blur(100px); /* Aggressive blur for fog effect */
+            opacity: 0.6;
+            animation: haze-drift 80s infinite linear alternate;
+            will-change: transform;
+            /* Start position */
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes haze-drift {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-20%, -30%) scale(1.1); }
+        }
+        /* --- End Haze/Fog Animation --- */
+
+
+        /* --- Button Live Animation (Updated to Emerald/Green) --- */
+        @keyframes pulseGlow {
+            /* Using approximate hex values for emerald-500 and emerald-700 */
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 
+            50% { box-shadow: 0 0 25px rgba(4, 120, 87, 0.7); } 
+        }
+        
+        #submitButton:not(:disabled) {
+            animation: pulseGlow 2.5s infinite ease-in-out;
+            transition: all 0.2s ease-in-out;
+        }
+
+        #submitButton:hover:not(:disabled) {
+            animation: none;
+            /* Using approximate hex values for emerald-500 */
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.6); 
+        }
+        /* --- End Button Live Animation --- */
+
+        .glass-card {
+            /* High opacity for good contrast against the light background */
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.9); 
+            
+            /* Initial shadow is soft and diffused (will be updated by JS) */
+            box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1); 
+            
+            z-index: 10; 
+            position: relative;
+            overflow: hidden; /* Important for containing the glare */
+            /* Transition for smooth JS-driven shadow and rotation */
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
+        }
+        
+        /* --- Dynamic Glare Effect Styling --- */
+        .glare-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 150%;
+            height: 150%;
+            pointer-events: none;
+            opacity: 0.8;
+            /* White-to-transparent diagonal gradient */
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.15) 35%,
+                rgba(255, 255, 255, 0.45) 50%,
+                rgba(255, 255, 255, 0.15) 65%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            /* Initial transform state - will be overridden by JS */
+            transform: translate(-100%, -100%) rotate(45deg);
+            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+            will-change: transform;
+            z-index: 100; /* Above all card content */
+        }
+        /* --- End Glare Effect Styling --- */
+
+        #profilePhoto {
+            /* Added transition for smooth JS-driven movement */
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
+            will-change: transform;
+            /* Initial styling for the border, dynamic shadow will be added via JS */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+            z-index: 15; /* Ensure photo is above glare */
+            position: relative;
+        }
+
         #result {
             min-height: 8rem;
             white-space: pre-wrap;
             word-wrap: break-word;
-            /* Base styles for the animation target */
             opacity: 0;
             transform: translateY(10px);
             transition: opacity 0.5s ease-out, transform 0.5s ease-out;
         }
-        /* Style for when the result is successfully loaded */
+        
         #result.loaded {
             opacity: 1;
             transform: translateY(0);
         }
-        /* Enhance the focus and hover states of the file input */
+
         .file-input-wrapper input[type="file"] {
             cursor: pointer;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        /* Use Inter font family */
-        body {
-            font-family: 'Inter', sans-serif;
+
+        /* Result box for glass style */
+        .glass-result {
+             background-color: rgba(255, 255, 255, 0.6);
+             border: 1px solid rgba(255, 255, 255, 0.9);
         }
+        
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-lg bg-white p-10 rounded-3xl shadow-2xl border border-indigo-50/50 transform transition duration-500 hover:shadow-indigo-300/50">
-        <h1 class="text-4xl font-extrabold text-indigo-800 mb-6 border-b-4 border-indigo-100 pb-3 tracking-wider">
+    <!-- REMOVED: The Sun Light Source DIV -->
+
+    <!-- Haze/Fog Animation Container (Farthest back, Z-index 0) -->
+    <div class="haze-container">
+        <div class="haze-blob" id="hazeBlob"></div>
+    </div>
+    
+    <!-- Card: Glass Style (Foreground element with dynamic shadow) -->
+    <div class="glass-card w-full max-w-lg p-10 rounded-2xl transition duration-500">
+        
+        <!-- Dynamic Glare Effect Container -->
+        <div class="glare-effect" id="glareEffect"></div>
+
+        <!-- Text color should still be dark to contrast with the glass card -->
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-6 border-b-4 border-emerald-400/50 pb-3 tracking-wider">
             SUZI CLOUD
         </h1>
-        <p class="text-gray-600 mb-8 transition duration-300">
-            Securely upload a single **JSON** file using a **password** (acting as an API Key) for authentication.
+        
+        <!-- Profile Photo Section -->
+        <div class="flex justify-center mb-6">
+            <!-- Updated placeholder image color to green -->
+            <img src="https://placehold.co/128x128/a5d6a7/ffffff/png?text=Cloud" 
+                 alt="Profile Photo Placeholder" 
+                 id="profilePhoto"
+                 class="w-32 h-32 rounded-full object-cover border-4 border-white/50"
+                 style="will-change: transform;">
+        </div>
+        <!-- End Profile Photo Section -->
+
+        <p class="text-gray-700 mb-8">
+            Securely upload **JSON** files to your data endpoint.
         </p>
 
         <form id="uploadForm" class="space-y-8">
@@ -48,40 +190,47 @@
             <!-- Password Input Field -->
             <div>
                 <label for="passwordInput" class="block text-lg font-semibold text-gray-700 mb-2">
-                    Enter Password (Used as X-Api-Key)
+                    Enter Password (X-Api-Key)
                 </label>
                 <input type="password" id="passwordInput" placeholder="Enter your secret key here"
-                    class="w-full p-3 border-2 border-indigo-300 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-md transition duration-300" required>
+                    class="w-full p-3 border border-emerald-300 rounded-lg bg-white/50 text-gray-800 placeholder-gray-500 
+                    focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-300 shadow-md" required>
             </div>
             <!-- End Password Input Field -->
 
             <div class="file-input-wrapper">
                 <label for="fileInput" class="block text-lg font-semibold text-gray-700 mb-2">
-                    Select File for Upload (JSON Only)
+                    Select JSON File for Upload
                 </label>
+                <!-- File Input: Glass Style (Updated to Emerald) -->
                 <input type="file" id="fileInput" accept=".json,application/json"
-                    class="w-full p-4 border-2 border-indigo-300 rounded-xl bg-indigo-50 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-base file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 transition duration-300 shadow-md focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500">
-                <p class="mt-2 text-sm text-gray-500">Only one **JSON** file is allowed (Field Name: <code>file</code>)</p>
+                    class="w-full p-4 border border-emerald-300 rounded-lg bg-white/50 file:mr-4 file:py-2 file:px-5 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-emerald-500 file:text-white 
+                    hover:file:bg-emerald-600 transition duration-300 shadow-md 
+                    focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                <p class="mt-2 text-sm text-gray-600">Only one **JSON** file is allowed for upload.</p>
             </div>
 
+            <!-- Main Upload Button (Updated to Emerald) -->
             <button type="submit" id="submitButton"
-                class="w-full flex items-center justify-center px-8 py-4 text-lg font-extrabold rounded-2xl shadow-xl text-white bg-indigo-600 
-                        hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] 
-                        focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 ease-in-out 
-                        disabled:opacity-60 disabled:shadow-none disabled:bg-gray-500 disabled:cursor-not-allowed">
+                class="w-full flex items-center justify-center px-6 py-3 text-lg font-extrabold rounded-lg shadow-xl text-white bg-emerald-500 
+                        hover:bg-emerald-600 hover:scale-[1.01] active:scale-[0.99] 
+                        focus:outline-none focus:ring-4 focus:ring-emerald-300 transition-all duration-200 ease-in-out 
+                        disabled:opacity-60 disabled:shadow-none disabled:bg-gray-400 disabled:cursor-not-allowed">
                 <svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Send File
+                Send JSON File
             </button>
         </form>
 
-        <div class="mt-10 pt-8 border-t-2 border-gray-100">
+        <div class="mt-10 pt-8 border-t border-emerald-300/50">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-                Server Response Status
+                Results
             </h2>
-            <div id="result" class="p-4 bg-gray-100 rounded-lg text-gray-700 text-sm overflow-auto font-mono shadow-inner">
+            <!-- Result Box: Subtle Glass Effect (Updated to Emerald) -->
+            <div id="result" data-valid-json="false"
+                 class="p-4 rounded-lg text-gray-700 text-sm overflow-auto font-mono shadow-inner glass-result">
                 Awaiting submission...
             </div>
             <p id="statusMessage" class="mt-4 text-base font-medium transition-colors duration-300"></p>
@@ -94,12 +243,26 @@
             const fileInput = document.getElementById('fileInput');
             const passwordInput = document.getElementById('passwordInput');
             const submitButton = document.getElementById('submitButton');
+            
             const resultDiv = document.getElementById('result');
             const statusMessage = document.getElementById('statusMessage');
-            const loadingSpinner = document.getElementById('loadingSpinner');
             
-            // ★ CONFIGURATION: The target URL remains constant.
-            const targetUrl = 'https://nest-twist-prescribed-tenant.trycloudflare.com/data_file'; 
+            // Elements for the Parallax/Shadow effect
+            const glassCard = document.querySelector('.glass-card');
+            const profilePhoto = document.getElementById('profilePhoto'); 
+            const glareEffect = document.getElementById('glareEffect'); 
+            
+            // References to the Haze blob - Note: Removed snow variables
+            // const hazeBlob = document.getElementById('hazeBlob'); // Not needed for mousemove
+
+            
+            // ★ CONFIGURATION
+            const targetUrl = 'https://cotton-circuit-jesse-fine.trycloudflare.com/data_file'; 
+            const MAX_RETRIES = 5;
+            const SHADOW_INTENSITY = 40; 
+            // Removed: SNOW_INTENSITY variables
+            const PHOTO_INTENSITY = 10; 
+            const GLARE_INTENSITY = 150; 
 
             // Helper function to update status message
             function displayStatus(message, colorClass) {
@@ -107,126 +270,248 @@
                 statusMessage.className = `mt-4 text-base font-medium ${colorClass} transition-colors duration-300`;
             }
 
-            // Update file selection status
-            fileInput.addEventListener('change', () => {
-                const fileNameDisplay = document.querySelector('.file-input-wrapper p.text-sm');
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const fileName = file.name;
-                    const isJson = fileName.toLowerCase().endsWith('.json');
-
-                    if (!isJson) {
-                        // Clear the input and warn the user
-                        fileInput.value = '';
-                        displayStatus('🚫 Only JSON files are allowed. Please select a .json file.', 'text-red-600');
-                        fileNameDisplay.textContent = 'Only one JSON file is allowed (Field Name: file)';
-                        fileNameDisplay.classList.remove('text-green-600', 'font-bold');
-                        fileNameDisplay.classList.add('text-gray-500');
-                        return;
+            // Function to handle API call with exponential backoff
+            async function fetchWithBackoff(url, options, retries = 0) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && retries < MAX_RETRIES) {
+                        const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithBackoff(url, options, retries + 1);
                     }
-                    
-                    fileNameDisplay.textContent = `✅ File Selected: ${fileName} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                    fileNameDisplay.classList.remove('text-gray-500');
-                    fileNameDisplay.classList.add('text-green-600', 'font-bold');
-                    displayStatus('File ready to send. Enter password.', 'text-yellow-600');
-                } else {
-                    fileNameDisplay.textContent = 'Only one JSON file is allowed (Field Name: file)';
-                    fileNameDisplay.classList.remove('text-green-600', 'font-bold');
-                    fileNameDisplay.classList.add('text-gray-500');
+                    return response;
+                } catch (error) {
+                    if (retries < MAX_RETRIES) {
+                        const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithBackoff(url, options, retries + 1);
+                    }
+                    // Throw final error after max retries
+                    throw error;
                 }
-            });
+            }
+
+            function setJsonResult(content, success) {
+                resultDiv.textContent = content;
+                resultDiv.classList.add('loaded');
+                
+                if (success) {
+                    // Updated to Emerald classes
+                    resultDiv.classList.add('bg-emerald-200/50', 'text-emerald-700', 'border-emerald-400');
+                    resultDiv.classList.remove('bg-red-200/50', 'text-red-700', 'border-red-400');
+                } else {
+                    resultDiv.classList.add('bg-red-200/50', 'text-red-700', 'border-red-400');
+                    resultDiv.classList.remove('bg-emerald-200/50', 'text-emerald-700', 'border-emerald-400');
+                }
+            }
+
+            // Function to determine if file is JSON (more robust check)
+            function isJsonFile(file) {
+                if (!file) return false;
+                const fileName = file.name.toLowerCase();
+                // Check extension OR MIME type
+                return fileName.endsWith('.json') || file.type === 'application/json';
+            }
+
+            // Update file selection status and enable/disable buttons
+            function updateUIState() {
+                const fileNameDisplay = document.querySelector('.file-input-wrapper p.text-sm');
+                const fileSelected = fileInput.files.length > 0;
+                const file = fileSelected ? fileInput.files[0] : null;
+                const passwordEntered = passwordInput.value.trim().length > 0;
+                
+                let isUploadAllowed = false;
+                let statusMsg = 'Select a JSON file and enter the password.';
+                let statusColor = 'text-gray-600';
+                let disableReason = '';
+
+                // Rule for button enablement
+                if (fileSelected && passwordEntered) {
+                    if (isJsonFile(file)) {
+                        isUploadAllowed = true;
+                        statusMsg = 'JSON file ready for secure upload.';
+                        statusColor = 'text-emerald-600'; // Updated to Emerald
+                    } else {
+                        isUploadAllowed = false;
+                        statusMsg = '🚫 Only JSON files are allowed for upload. Check file type.';
+                        statusColor = 'text-red-500';
+                        disableReason = 'File is not JSON (.json extension or application/json MIME type required).';
+                    }
+                } else if (fileSelected && !passwordEntered) {
+                     isUploadAllowed = false;
+                     statusMsg = 'Please enter the password (API Key) to enable submission.';
+                     statusColor = 'text-yellow-600';
+                     disableReason = 'Missing password (X-Api-Key).';
+                } else if (!fileSelected && passwordEntered) {
+                     isUploadAllowed = false;
+                     statusMsg = 'Please select a JSON file.';
+                     statusColor = 'text-yellow-600';
+                     disableReason = 'Missing file selection.';
+                } else {
+                    disableReason = 'Missing file and password.';
+                }
+                
+                submitButton.disabled = !isUploadAllowed;
+                displayStatus(statusMsg, statusColor);
+
+                if (file) {
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                    const fileTypeValid = isJsonFile(file);
+                    
+                    fileNameDisplay.textContent = `${fileTypeValid ? '✅' : '❌'} File Selected: ${file.name} (${fileSize} MB)`;
+                    // Updated to Emerald class
+                    fileNameDisplay.classList.remove('text-gray-600', 'text-red-500', 'text-emerald-500');
+                    fileNameDisplay.classList.add(fileTypeValid ? 'text-emerald-500' : 'text-red-500', 'font-bold');
+                } else {
+                    fileNameDisplay.textContent = 'Only one JSON file is allowed for upload.';
+                    fileNameDisplay.classList.remove('text-emerald-500', 'font-bold', 'text-red-500');
+                    fileNameDisplay.classList.add('text-gray-600');
+                }
+
+                if (!isUploadAllowed) {
+                    console.warn(`[UPLOAD BLOCKED] Button is disabled. Reason: ${disableReason}`);
+                }
+            }
+
+
+            fileInput.addEventListener('change', updateUIState);
+            passwordInput.addEventListener('input', updateUIState);
 
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                // 1. Validation for File
                 const file = fileInput.files[0];
-                if (!file) {
-                    displayStatus('Please select a file to upload.', 'text-yellow-600');
-                    return;
-                }
-
-                // 2. Validation for Password (NEW)
                 const password = passwordInput.value.trim();
-                if (!password) {
-                    displayStatus('Please enter the password to authorize the upload.', 'text-yellow-600');
-                    passwordInput.focus();
+                
+                // Final validation check before attempting network call
+                if (!file || !password || !isJsonFile(file)) {
+                    displayStatus('Submission blocked. Ensure a JSON file is selected and password is entered.', 'text-red-500');
                     return;
                 }
 
-                // 3. JavaScript File Type Check (Redundant due to change listener, but good safety measure)
-                const fileName = file.name;
-                const isJson = fileName.toLowerCase().endsWith('.json');
-                if (!isJson) {
-                    displayStatus('Validation Failed: Only JSON files (.json extension) are accepted.', 'text-red-600');
-                    return;
-                }
-
-                // 4. State & UI Update (Loading)
+                // 2. State & UI Update (Loading)
                 submitButton.disabled = true;
-                // Show spinner and change button text dynamically
                 submitButton.innerHTML = `<svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...`;
                 
-                displayStatus('Sending file...', 'text-indigo-600');
                 resultDiv.textContent = 'Processing request...';
-                resultDiv.classList.remove('loaded', 'bg-red-100', 'bg-green-100');
+                resultDiv.classList.remove('loaded', 'text-red-700', 'text-emerald-700', 'bg-red-200/50', 'bg-emerald-200/50');
+                resultDiv.classList.add('glass-result');
 
+                // --- CORE LOGIC: DIRECT UPLOAD ---
+                // Updated to Emerald
+                displayStatus('Sending JSON file to server...', 'text-emerald-500');
 
-                // 5. Construct FormData
                 const formData = new FormData();
                 formData.append('file', file);
 
-                // 6. Send Request
                 try {
-                    const response = await fetch(targetUrl, {
+                    const response = await fetchWithBackoff(targetUrl, {
                         method: 'POST',
                         body: formData,
-                        // Using the entered password as the API Key in the header
                         headers: {
                             'X-Api-Key': password 
                         }
                     });
 
-                    // 7. Handle Response
                     const responseText = await response.text();
+                    let isSuccess = response.ok;
 
-                    if (response.ok) {
-                        displayStatus(`Success! Status: ${response.status} ${response.statusText}`, 'text-green-600');
-                        resultDiv.textContent = responseText || 'No body received from server.';
-                        resultDiv.classList.remove('bg-red-100');
-                        resultDiv.classList.add('bg-green-100');
+                    if (isSuccess) {
+                        // Updated to Emerald
+                        displayStatus(`Success! Status: ${response.status} ${response.statusText}`, 'text-emerald-500');
+                        
+                        // Try to format the response text if it looks like JSON
+                        let displayContent = responseText || 'No body received from server.';
+                        try {
+                            displayContent = JSON.stringify(JSON.parse(responseText), null, 2);
+                        } catch (e) {
+                            // If it's not JSON, use raw text but still treat as success if status is ok
+                        }
+                        setJsonResult(displayContent, true);
+
                     } else {
-                        // Handle server-side errors (e.g., 400, 401, 500)
                         let errorMsg = `Error! Status: ${response.status} ${response.statusText}.`;
                         if (response.status === 401) {
                             errorMsg += ' Check your password/API Key.';
                         }
-                        displayStatus(errorMsg, 'text-red-600');
-                        resultDiv.textContent = responseText || 'Server returned an error with no response body.';
-                        resultDiv.classList.remove('bg-green-100');
-                        resultDiv.classList.add('bg-red-100');
+                        displayStatus(errorMsg, 'text-red-500');
+                        setJsonResult(responseText || 'Server returned an error with no response body.', false);
                     }
-
                 } catch (error) {
-                    // Handle network errors (e.g., CORS, connection refused)
                     console.error('Fetch Error:', error);
-                    displayStatus(`Network Error: Could not reach the server. ${error.message}`, 'text-red-600');
-                    resultDiv.textContent = 'A network error occurred. Check the console for details.';
-                    resultDiv.classList.remove('bg-green-100');
-                    resultDiv.classList.add('bg-red-100');
-                } finally {
-                    // 8. Final UI Update
-                    submitButton.disabled = false;
-                    // Reset button text and remove spinner
-                    submitButton.textContent = 'Send File';
-
-                    // Trigger the fade-in animation for the result
-                    setTimeout(() => {
-                        resultDiv.classList.add('loaded');
-                    }, 50); 
+                    displayStatus(`Network Error: Could not reach the server. ${error.message}`, 'text-red-500');
+                    setJsonResult('A network error occurred. Check the console for details.', false);
                 }
+                
+                // 3. Final UI Update 
+                submitButton.textContent = 'Send JSON File';
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                updateUIState();
             });
+
+            // --- Dynamic Shadow, Rotation, and Glare Logic ---
+            document.addEventListener('mousemove', (e) => {
+                // Get bounds of the body/viewport
+                const bodyRect = document.body.getBoundingClientRect();
+                
+                // Get bounds of the glass card
+                const cardRect = glassCard.getBoundingClientRect();
+                const centerX = cardRect.left + cardRect.width / 2;
+                const centerY = cardRect.top + cardRect.height / 2;
+
+                // Normalized position relative to the center of the card (-0.5 to 0.5)
+                const normalizedX = (e.clientX - centerX) / cardRect.width;
+                const normalizedY = (e.clientY - centerY) / cardRect.height;
+                
+                // --- 1. Card Rotation (3D Effect) ---
+                const rotateY = -normalizedX * 6; // Slight horizontal rotation
+                const rotateX = normalizedY * 6;   // Slight vertical rotation
+
+                // --- 2. Dynamic Shadow (General Light Source from Top-Left) ---
+                // Shadow moves in the direction AWAY from the assumed light source (top-left) 
+                const shadowOffsetX = -normalizedX * SHADOW_INTENSITY; 
+                const shadowOffsetY = -normalizedY * SHADOW_INTENSITY;
+
+                glassCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                
+                // The dynamic shadow direction is reversed for a more appealing effect
+                glassCard.style.boxShadow = `
+                    ${shadowOffsetX}px ${shadowOffsetY}px 40px 0 rgba(0, 0, 0, 0.4), /* Dynamic Shadow */
+                    0 8px 32px 0 rgba(255, 255, 255, 0.15) /* Static Glass Shadow */
+                `;
+
+                // --- 3. Snow Parallax REMOVED, Haze is CSS animated ---
+                // Code removed: snow1, snow2, snow3 transform updates
+
+                // --- 4. Profile Photo Parallax ---
+                const photoTranslateX = normalizedX * PHOTO_INTENSITY;
+                const photoTranslateY = normalizedY * PHOTO_INTENSITY;
+                
+                profilePhoto.style.transform = `translate3d(${photoTranslateX}px, ${photoTranslateY}px, 0)`;
+                
+                // Adjusting the photo's internal shadow to reflect the card's general light direction
+                profilePhoto.style.boxShadow = `
+                    ${-photoTranslateX * 2}px ${-photoTranslateY * 2}px 20px rgba(0, 0, 0, 0.4), /* Dynamic Shadow */
+                    0 0 0 4px rgba(255, 255, 255, 0.5), 
+                    0 4px 10px rgba(0, 0, 0, 0.1) 
+                `;
+
+                // --- 5. Dynamic Glare/Highlight ---
+                // The glare moves across the surface based on mouse position.
+                const glareX = normalizedX * GLARE_INTENSITY; 
+                const glareY = normalizedY * GLARE_INTENSITY;
+                
+                glareEffect.style.transform = `
+                    translate(${glareX}px, ${glareY}px) 
+                    translate(-50%, -50%) 
+                    rotate(45deg)
+                `;
+            });
+            // --- End Dynamic Effects Logic ---
+
+            // Initial UI setup
+            updateUIState();
         });
     </script>
 </body>
