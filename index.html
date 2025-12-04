@@ -13,17 +13,19 @@
             /* Switched to a soft, misty green gradient */
             background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
             position: relative;
-            overflow: hidden;
-            height: 100vh;
+            /* 🐛 FIX: Changed height to min-height and removed overflow: hidden; to enable scrolling */
+            min-height: 100vh; 
         }
         
         /* --- Haze/Fog Animation (Farthest Back) --- */
         .haze-container {
+            /* KEEP fixed so it doesn't scroll with the content */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            /* 🐛 FIX: Use 100vh to ensure the haze covers the viewport */
+            height: 100vh; 
             pointer-events: none;
             z-index: 0; /* Layer 0, behind everything */
             overflow: hidden;
@@ -150,9 +152,7 @@
         
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-
-    <!-- REMOVED: The Sun Light Source DIV -->
+<body class="flex flex-col items-center justify-center p-4">
 
     <!-- Haze/Fog Animation Container (Farthest back, Z-index 0) -->
     <div class="haze-container">
@@ -160,7 +160,8 @@
     </div>
     
     <!-- Card: Glass Style (Foreground element with dynamic shadow) -->
-    <div class="glass-card w-full max-w-lg p-10 rounded-2xl transition duration-500">
+    <!-- Added mt-10 and mb-10 for padding on scrollable content -->
+    <div class="glass-card w-full max-w-lg p-10 rounded-2xl transition duration-500 my-10">
         
         <!-- Dynamic Glare Effect Container -->
         <div class="glare-effect" id="glareEffect"></div>
@@ -173,11 +174,11 @@
         <!-- Profile Photo Section -->
         <div class="flex justify-center mb-6">
             <!-- Updated placeholder image color to green -->
-            <img src="Cloud.png"
-                 alt="Profile Photo Placeholder"
-                 id="profilePhoto"
-                 
-                 style="will-change: transform;">
+            <img src="https://placehold.co/120x120/a5d6a7/ffffff?text=Cloud"
+                alt="Profile Photo Placeholder"
+                id="profilePhoto"
+                class="w-32 h-32 rounded-full ring-4 ring-white/60 object-cover"
+                style="will-change: transform;">
 
         </div>
         <!-- End Profile Photo Section -->
@@ -231,7 +232,7 @@
             </h2>
             <!-- Result Box: Subtle Glass Effect (Updated to Emerald) -->
             <div id="result" data-valid-json="false"
-                 class="p-4 rounded-lg text-gray-700 text-sm overflow-auto font-mono shadow-inner glass-result">
+                class="p-4 rounded-lg text-gray-700 text-sm overflow-auto font-mono shadow-inner glass-result">
                 Awaiting submission...
             </div>
             <p id="statusMessage" class="mt-4 text-base font-medium transition-colors duration-300"></p>
@@ -253,15 +254,11 @@
             const profilePhoto = document.getElementById('profilePhoto'); 
             const glareEffect = document.getElementById('glareEffect'); 
             
-            // References to the Haze blob - Note: Removed snow variables
-            // const hazeBlob = document.getElementById('hazeBlob'); // Not needed for mousemove
-
             
             // ★ CONFIGURATION
             const targetUrl = 'https://cotton-circuit-jesse-fine.trycloudflare.com/data_file'; 
             const MAX_RETRIES = 5;
             const SHADOW_INTENSITY = 40; 
-            // Removed: SNOW_INTENSITY variables
             const PHOTO_INTENSITY = 10; 
             const GLARE_INTENSITY = 150; 
 
@@ -339,15 +336,15 @@
                         disableReason = 'File is not JSON (.json extension or application/json MIME type required).';
                     }
                 } else if (fileSelected && !passwordEntered) {
-                     isUploadAllowed = false;
-                     statusMsg = 'Please enter the password (API Key) to enable submission.';
-                     statusColor = 'text-yellow-600';
-                     disableReason = 'Missing password (X-Api-Key).';
+                    isUploadAllowed = false;
+                    statusMsg = 'Please enter the password (API Key) to enable submission.';
+                    statusColor = 'text-yellow-600';
+                    disableReason = 'Missing password (X-Api-Key).';
                 } else if (!fileSelected && passwordEntered) {
-                     isUploadAllowed = false;
-                     statusMsg = 'Please select a JSON file.';
-                     statusColor = 'text-yellow-600';
-                     disableReason = 'Missing file selection.';
+                    isUploadAllowed = false;
+                    statusMsg = 'Please select a JSON file.';
+                    statusColor = 'text-yellow-600';
+                    disableReason = 'Missing file selection.';
                 } else {
                     disableReason = 'Missing file and password.';
                 }
@@ -482,10 +479,7 @@
                     0 8px 32px 0 rgba(255, 255, 255, 0.15) /* Static Glass Shadow */
                 `;
 
-                // --- 3. Snow Parallax REMOVED, Haze is CSS animated ---
-                // Code removed: snow1, snow2, snow3 transform updates
-
-                // --- 4. Profile Photo Parallax ---
+                // --- 3. Profile Photo Parallax ---
                 const photoTranslateX = normalizedX * PHOTO_INTENSITY;
                 const photoTranslateY = normalizedY * PHOTO_INTENSITY;
                 
@@ -498,7 +492,7 @@
                     0 4px 10px rgba(0, 0, 0, 0.1) 
                 `;
 
-                // --- 5. Dynamic Glare/Highlight ---
+                // --- 4. Dynamic Glare/Highlight ---
                 // The glare moves across the surface based on mouse position.
                 const glareX = normalizedX * GLARE_INTENSITY; 
                 const glareY = normalizedY * GLARE_INTENSITY;
