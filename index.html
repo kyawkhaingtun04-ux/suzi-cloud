@@ -3,59 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUZI CLOUD - Cool Glass Upload</title>
+    <title>SUZI CLOUD - Dynamic Weather Control</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for the Glassmorphism effect */
         body {
             font-family: 'Inter', sans-serif;
-            /* Switched to a soft, misty green gradient */
+            /* Default Background: Soft Misty Green (Snow/Rain) */
             background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
             position: relative;
-            /* 🐛 FIX: Changed height to min-height and removed overflow: hidden; to enable scrolling */
             min-height: 100vh; 
+            transition: background-image 1s ease-in-out; /* Smooth BG transition */
         }
-        
-        /* --- Haze/Fog Animation (Farthest Back) --- */
-        .haze-container {
-            /* KEEP fixed so it doesn't scroll with the content */
+
+        /* --- Dynamic Cloud Animation (Layer 1) --- */
+        .cloud-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            /* 🐛 FIX: Use 100vh to ensure the haze covers the viewport */
             height: 100vh; 
             pointer-events: none;
-            z-index: 0; /* Layer 0, behind everything */
+            z-index: 1; 
             overflow: hidden;
         }
 
-        .haze-blob {
+        .cloud {
             position: absolute;
-            width: 200vw;
-            height: 200vh;
-            border-radius: 50%; /* Large circle */
-            /* Subtle white radial gradient */
-            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 60%);
-            filter: blur(100px); /* Aggressive blur for fog effect */
-            opacity: 0.6;
-            animation: haze-drift 80s infinite linear alternate;
+            background: rgba(255, 255, 255, 0.85); 
+            border-radius: 50%; 
+            filter: blur(10px); 
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.7); 
             will-change: transform;
-            /* Start position */
-            transform: translate(-50%, -50%);
+            opacity: 0; 
         }
 
-        @keyframes haze-drift {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            100% { transform: translate(-20%, -30%) scale(1.1); }
+        @keyframes cloud-drift {
+            0% { transform: translateX(100vw) translateY(var(--y-start)) scale(var(--scale)); opacity: 0; }
+            5% { opacity: 0.9; }
+            95% { opacity: 0.9; }
+            100% { transform: translateX(-150vw) translateY(var(--y-end)) scale(var(--scale)); opacity: 0; }
         }
-        /* --- End Haze/Fog Animation --- */
+        
+        /* --- General Particle Container (Layer 5) --- */
+        .particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+            display: none; /* Controlled by JS */
+        }
+        
+        /* --- Snow Falling Animation --- */
+        .snowflake {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+            opacity: 0; 
+            animation: fall linear infinite;
+            will-change: transform, opacity;
+        }
 
+        @keyframes fall {
+            0% { opacity: 0; transform: translate3d(0, -10px, 0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translate3d(var(--x-end), 100vh, 0); }
+        }
+
+        /* --- Rain Falling Animation (NEW) --- */
+        .raindrop {
+            position: absolute;
+            /* Light blue color for water */
+            background: rgba(173, 216, 230, 0.6); 
+            width: 2px;
+            height: 30px; /* Long streak */
+            border-radius: 1px;
+            opacity: 0;
+            animation: rain-fall linear infinite;
+            will-change: transform, opacity;
+        }
+
+        @keyframes rain-fall {
+            0% { opacity: 0; transform: translate3d(0, -50px, 0); }
+            5% { opacity: 0.8; }
+            100% { opacity: 0; transform: translate3d(var(--x-end), 100vh, 0); }
+        }
+
+        /* --- Momiji Leaf Falling Animation (NEW) --- */
+        .momiji-leaf {
+            position: absolute;
+            font-size: 24px; 
+            opacity: 0;
+            color: #d946ef; /* Purple-Red for Momiji */
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            animation: leaf-fall linear infinite;
+            will-change: transform, opacity;
+        }
+
+        @keyframes leaf-fall {
+            0% { opacity: 0; transform: translate3d(0, -20px, 0) rotate(0deg); }
+            10% { opacity: 1; }
+            50% { transform: translate3d(var(--x-mid), 50vh, 0) rotate(var(--rot-mid)); }
+            100% { opacity: 0; transform: translate3d(var(--x-end), 100vh, 0) rotate(var(--rot-end)); }
+        }
 
         /* --- Button Live Animation (Updated to Emerald/Green) --- */
         @keyframes pulseGlow {
-            /* Using approximate hex values for emerald-500 and emerald-700 */
             0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 
             50% { box-shadow: 0 0 25px rgba(4, 120, 87, 0.7); } 
         }
@@ -67,61 +128,50 @@
 
         #submitButton:hover:not(:disabled) {
             animation: none;
-            /* Using approximate hex values for emerald-500 */
             box-shadow: 0 10px 20px rgba(16, 185, 129, 0.6); 
         }
-        /* --- End Button Live Animation --- */
+
+        .weather-button.active {
+            background-color: #059669; /* Emerald 600 */
+            color: white;
+            box-shadow: 0 0 10px rgba(4, 120, 87, 0.7);
+        }
 
         .glass-card {
-            /* High opacity for good contrast against the light background */
             background-color: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px); 
             border: 1px solid rgba(255, 255, 255, 0.9); 
-            
-            /* Initial shadow is soft and diffused (will be updated by JS) */
             box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1); 
-            
             z-index: 10; 
             position: relative;
-            overflow: hidden; /* Important for containing the glare */
-            /* Transition for smooth JS-driven shadow and rotation */
+            overflow: hidden; 
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
         }
         
-        /* --- Dynamic Glare Effect Styling --- */
         .glare-effect {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 150%;
-            height: 150%;
+            top: 0; left: 0;
+            width: 150%; height: 150%;
             pointer-events: none;
             opacity: 0.8;
-            /* White-to-transparent diagonal gradient */
             background: linear-gradient(
                 45deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.15) 35%,
-                rgba(255, 255, 255, 0.45) 50%,
-                rgba(255, 255, 255, 0.15) 65%,
+                rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 35%,
+                rgba(255, 255, 255, 0.45) 50%, rgba(255, 255, 255, 0.15) 65%,
                 rgba(255, 255, 255, 0) 100%
             );
-            /* Initial transform state - will be overridden by JS */
             transform: translate(-100%, -100%) rotate(45deg);
             transition: transform 0.1s ease-out, opacity 0.1s ease-out;
             will-change: transform;
-            z-index: 100; /* Above all card content */
+            z-index: 100;
         }
-        /* --- End Glare Effect Styling --- */
 
         #profilePhoto {
-            /* Added transition for smooth JS-driven movement */
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out; 
             will-change: transform;
-            /* Initial styling for the border, dynamic shadow will be added via JS */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
-            z-index: 15; /* Ensure photo is above glare */
+            z-index: 15; 
             position: relative;
         }
 
@@ -144,7 +194,6 @@
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        /* Result box for glass style */
         .glass-result {
              background-color: rgba(255, 255, 255, 0.6);
              border: 1px solid rgba(255, 255, 255, 0.9);
@@ -154,32 +203,44 @@
 </head>
 <body class="flex flex-col items-center justify-center p-4">
 
-    <!-- Haze/Fog Animation Container (Farthest back, Z-index 0) -->
-    <div class="haze-container">
-        <div class="haze-blob" id="hazeBlob"></div>
-    </div>
+    <!-- Dynamic Cloud Container (Layer 1, Farthest back) -->
+    <div class="cloud-container" id="cloudContainer"></div>
     
-    <!-- Card: Glass Style (Foreground element with dynamic shadow) -->
-    <!-- Added mt-10 and mb-10 for padding on scrollable content -->
+    <!-- Weather Particle Containers (Layer 5) -->
+    <div class="particle-container" id="snowContainer"></div>
+    <div class="particle-container" id="rainContainer"></div>
+    <div class="particle-container" id="momijiContainer"></div>
+    
+    <!-- Weather Control Buttons -->
+    <div class="flex space-x-4 mb-6 mt-6 z-20">
+        <button id="btnSnow" data-weather="snow" class="weather-button bg-white text-gray-700 font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-emerald-50 active:scale-95 transition">
+            ❄️ Snow
+        </button>
+        <button id="btnRain" data-weather="rain" class="weather-button bg-white text-gray-700 font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-emerald-50 active:scale-95 transition">
+            🌧️ Rain
+        </button>
+        <button id="btnSunny" data-weather="sunny" class="weather-button bg-white text-gray-700 font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-emerald-50 active:scale-95 transition">
+            ☀️ Sunny (Momiji)
+        </button>
+    </div>
+
+    <!-- Card: Glass Style (Foreground element, Z-index 10) -->
     <div class="glass-card w-full max-w-lg p-10 rounded-2xl transition duration-500 my-10">
         
         <!-- Dynamic Glare Effect Container -->
         <div class="glare-effect" id="glareEffect"></div>
 
-        <!-- Text color should still be dark to contrast with the glass card -->
         <h1 class="text-4xl font-extrabold text-gray-800 mb-6 border-b-4 border-emerald-400/50 pb-3 tracking-wider">
             SUZI CLOUD
         </h1>
         
-        <!-- Profile Photo Section -->
+        <!-- Profile Photo Section - UPDATED -->
         <div class="flex justify-center mb-6">
-            <!-- Updated placeholder image color to green -->
             <img src="Cloud.png"
-                 alt="Profile Photo Placeholder"
-                 id="profilePhoto"
-                 class="w-40"
-                 style="will-change: transform;">
-
+                alt="SUZI Cloud Logo"
+                id="profilePhoto"
+               
+                style="will-change: transform;">
         </div>
         <!-- End Profile Photo Section -->
 
@@ -209,7 +270,9 @@
                     class="w-full p-4 border border-emerald-300 rounded-lg bg-white/50 file:mr-4 file:py-2 file:px-5 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-emerald-500 file:text-white 
                     hover:file:bg-emerald-600 transition duration-300 shadow-md 
                     focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                <p class="mt-2 text-sm text-gray-600">Only one **JSON** file is allowed for upload.</p>
+                
+                <!-- ADDED ID for safe access in JS -->
+                <p id="fileStatusDisplay" class="mt-2 text-sm text-gray-600">Only one **JSON** file is allowed for upload.</p>
             </div>
 
             <!-- Main Upload Button (Updated to Emerald) -->
@@ -241,6 +304,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- CORE VARIABLE DECLARATION ---
             const form = document.getElementById('uploadForm');
             const fileInput = document.getElementById('fileInput');
             const passwordInput = document.getElementById('passwordInput');
@@ -248,24 +312,221 @@
             
             const resultDiv = document.getElementById('result');
             const statusMessage = document.getElementById('statusMessage');
+            const fileStatusDisplay = document.getElementById('fileStatusDisplay'); 
             
-            // Elements for the Parallax/Shadow effect
             const glassCard = document.querySelector('.glass-card');
             const profilePhoto = document.getElementById('profilePhoto'); 
             const glareEffect = document.getElementById('glareEffect'); 
+            const cloudContainer = document.getElementById('cloudContainer'); 
             
-            
+            const snowContainer = document.getElementById('snowContainer');
+            const rainContainer = document.getElementById('rainContainer');
+            const momijiContainer = document.getElementById('momijiContainer');
+            const weatherButtons = document.querySelectorAll('.weather-button');
+
+            // CRITICAL CHECK: Ensure core elements are present before proceeding
+            if (!resultDiv) {
+                console.error("Critical UI element (#result) is missing. Script aborted.");
+                return;
+            }
+
             // ★ CONFIGURATION
             const targetUrl = 'https://cloud-1-gqld.onrender.com/data_file'; 
             const MAX_RETRIES = 5;
             const SHADOW_INTENSITY = 40; 
             const PHOTO_INTENSITY = 10; 
             const GLARE_INTENSITY = 150; 
+            const CLOUD_COUNT = 7; 
+            const SNOWFLAKE_COUNT = 80;
+            const RAINDROP_COUNT = 150; 
+            const MOMIJI_COUNT = 40;
+
+            let currentWeather = 'snow'; 
+
+            // --- Cloud Generation Logic (Used in all modes) ---
+            function generateClouds() {
+                if (cloudContainer && cloudContainer.children.length > 0) return; 
+                if (!cloudContainer) return;
+
+                for (let i = 0; i < CLOUD_COUNT; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.className = 'cloud';
+                    
+                    const size = Math.random() * 250 + 150; 
+                    cloud.style.width = `${size}px`;
+                    cloud.style.height = `${size * 0.75}px`; 
+
+                    const yStart = Math.random() * 120 - 20; 
+                    const yEnd = Math.random() * 120 - 20; 
+                    
+                    const scale = Math.random() * 0.5 + 0.8;
+                    cloud.style.setProperty('--scale', scale);
+                    cloud.style.setProperty('--y-start', `${yStart}vh`);
+                    cloud.style.setProperty('--y-end', `${yEnd}vh`);
+
+                    const duration = Math.random() * 70 + 50; 
+                    cloud.style.animationDuration = `${duration}s`;
+
+                    const delay = Math.random() * 60 * -1;
+                    cloud.style.animationDelay = `${delay}s`;
+                    
+                    cloud.style.left = '100vw';
+                    cloud.style.top = `${yStart}vh`;
+
+                    cloud.style.animationName = 'cloud-drift';
+                    cloud.style.animationTimingFunction = 'linear';
+                    cloud.style.animationIterationCount = 'infinite';
+                    
+                    cloudContainer.appendChild(cloud);
+                }
+            }
+            generateClouds();
+
+
+            // --- Snow Generation Logic ---
+            function generateSnowflakes() {
+                if (snowContainer && snowContainer.children.length > 0) return; 
+                if (!snowContainer) return;
+
+                for (let i = 0; i < SNOWFLAKE_COUNT; i++) {
+                    const snowflake = document.createElement('div');
+                    snowflake.className = 'snowflake';
+
+                    const size = Math.random() * 5 + 3;
+                    snowflake.style.width = `${size}px`;
+                    snowflake.style.height = `${size}px`;
+
+                    const startX = Math.random() * 100;
+                    snowflake.style.left = `${startX}vw`;
+
+                    const duration = Math.random() * 20 + 20;
+                    snowflake.style.animationDuration = `${duration}s`;
+
+                    const delay = Math.random() * 30;
+                    snowflake.style.animationDelay = `${delay}s`;
+
+                    const driftX = (Math.random() - 0.5) * 50; 
+                    snowflake.style.setProperty('--x-end', `${driftX}px`);
+
+                    snowContainer.appendChild(snowflake);
+                }
+            }
+            generateSnowflakes();
+
+
+            // --- Rain Generation Logic (NEW) ---
+            function generateRaindrops() {
+                if (rainContainer && rainContainer.children.length > 0) return; 
+                if (!rainContainer) return;
+
+                for (let i = 0; i < RAINDROP_COUNT; i++) {
+                    const raindrop = document.createElement('div');
+                    raindrop.className = 'raindrop';
+
+                    const startX = Math.random() * 100;
+                    raindrop.style.left = `${startX}vw`;
+
+                    const duration = Math.random() * 5 + 3; 
+                    raindrop.style.animationDuration = `${duration}s`;
+
+                    const delay = Math.random() * 8; 
+                    raindrop.style.animationDelay = `${delay}s`;
+
+                    const driftX = (Math.random() * 50) + 20; 
+                    raindrop.style.setProperty('--x-end', `${driftX}px`);
+
+                    rainContainer.appendChild(raindrop);
+                }
+            }
+            generateRaindrops();
+            
+            // --- Momiji Generation Logic (NEW) ---
+            function generateMomiji() {
+                if (momijiContainer && momijiContainer.children.length > 0) return; 
+                if (!momijiContainer) return;
+
+                const leafChars = ['🍁', '🍂', '🧡'];
+
+                for (let i = 0; i < MOMIJI_COUNT; i++) {
+                    const momiji = document.createElement('div');
+                    momiji.className = 'momiji-leaf';
+                    momiji.textContent = leafChars[Math.floor(Math.random() * leafChars.length)];
+
+                    const startX = Math.random() * 100;
+                    momiji.style.left = `${startX}vw`;
+
+                    const duration = Math.random() * 30 + 15; 
+                    momiji.style.animationDuration = `${duration}s`;
+
+                    const delay = Math.random() * 20;
+                    momiji.style.animationDelay = `${delay}s`;
+
+                    momiji.style.setProperty('--x-mid', `${(Math.random() - 0.5) * 100}px`);
+                    momiji.style.setProperty('--x-end', `${(Math.random() - 0.5) * 200}px`);
+                    momiji.style.setProperty('--rot-mid', `${Math.random() * 1080 - 540}deg`);
+                    momiji.style.setProperty('--rot-end', `${Math.random() * 1080 - 540}deg`);
+
+
+                    momijiContainer.appendChild(momiji);
+                }
+            }
+            generateMomiji();
+
+
+            // --- Weather Switching Logic (NEW) ---
+            function setWeather(type) {
+                // 1. Reset all containers to hidden (with null checks)
+                if(snowContainer) snowContainer.style.display = 'none';
+                if(rainContainer) rainContainer.style.display = 'none';
+                if(momijiContainer) momijiContainer.style.display = 'none';
+
+                // 2. Remove all active button classes
+                weatherButtons.forEach(btn => btn.classList.remove('active'));
+
+                // 3. Set new weather and display container
+                currentWeather = type;
+
+                // Set body background based on weather
+                let newBackground;
+                let activeBtn;
+
+                switch(type) {
+                    case 'snow':
+                        if(snowContainer) snowContainer.style.display = 'block';
+                        newBackground = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%)';
+                        activeBtn = document.getElementById('btnSnow');
+                        break;
+                    case 'rain':
+                        if(rainContainer) rainContainer.style.display = 'block';
+                        newBackground = 'linear-gradient(135deg, #cfd8dc 0%, #90a4ae 50%, #607d8b 100%)';
+                        activeBtn = document.getElementById('btnRain');
+                        break;
+                    case 'sunny':
+                        if(momijiContainer) momijiContainer.style.display = 'block';
+                        newBackground = 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 50%, #ffb74d 100%)';
+                        activeBtn = document.getElementById('btnSunny');
+                        break;
+                }
+                
+                document.body.style.backgroundImage = newBackground;
+                if(activeBtn) activeBtn.classList.add('active');
+            }
+
+
+            // --- Event Listeners for Weather Buttons ---
+            weatherButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const type = e.currentTarget.getAttribute('data-weather');
+                    setWeather(type);
+                });
+            });
 
             // Helper function to update status message
             function displayStatus(message, colorClass) {
-                statusMessage.textContent = message;
-                statusMessage.className = `mt-4 text-base font-medium ${colorClass} transition-colors duration-300`;
+                if (statusMessage) { // Added null check
+                    statusMessage.textContent = message;
+                    statusMessage.className = `mt-4 text-base font-medium ${colorClass} transition-colors duration-300`;
+                }
             }
 
             // Function to handle API call with exponential backoff
@@ -284,22 +545,27 @@
                         await new Promise(resolve => setTimeout(resolve, delay));
                         return fetchWithBackoff(url, options, retries + 1);
                     }
-                    // Throw final error after max retries
                     throw error;
                 }
             }
 
             function setJsonResult(content, success) {
-                resultDiv.textContent = content;
-                resultDiv.classList.add('loaded');
-                
-                if (success) {
-                    // Updated to Emerald classes
-                    resultDiv.classList.add('bg-emerald-200/50', 'text-emerald-700', 'border-emerald-400');
-                    resultDiv.classList.remove('bg-red-200/50', 'text-red-700', 'border-red-400');
-                } else {
-                    resultDiv.classList.add('bg-red-200/50', 'text-red-700', 'border-red-400');
+                // EXPLICIT CHECK: The core variable that was failing
+                if (resultDiv) { 
+                    resultDiv.textContent = content;
+                    resultDiv.classList.add('loaded');
+                    
+                    // Always remove classes first
                     resultDiv.classList.remove('bg-emerald-200/50', 'text-emerald-700', 'border-emerald-400');
+                    resultDiv.classList.remove('bg-red-200/50', 'text-red-700', 'border-red-400');
+
+                    if (success) {
+                        resultDiv.classList.add('bg-emerald-200/50', 'text-emerald-700', 'border-emerald-400');
+                    } else {
+                        resultDiv.classList.add('bg-red-200/50', 'text-red-700', 'border-red-400');
+                    }
+                } else {
+                    console.error("setJsonResult failed: resultDiv is null.");
                 }
             }
 
@@ -307,13 +573,14 @@
             function isJsonFile(file) {
                 if (!file) return false;
                 const fileName = file.name.toLowerCase();
-                // Check extension OR MIME type
                 return fileName.endsWith('.json') || file.type === 'application/json';
             }
 
             // Update file selection status and enable/disable buttons
             function updateUIState() {
-                const fileNameDisplay = document.querySelector('.file-input-wrapper p.text-sm');
+                // Safely access the display element
+                if (!fileStatusDisplay || !submitButton || !passwordInput || !fileInput) return; 
+
                 const fileSelected = fileInput.files.length > 0;
                 const file = fileSelected ? fileInput.files[0] : null;
                 const passwordEntered = passwordInput.value.trim().length > 0;
@@ -321,179 +588,170 @@
                 let isUploadAllowed = false;
                 let statusMsg = 'Select a JSON file and enter the password.';
                 let statusColor = 'text-gray-600';
-                let disableReason = '';
 
                 // Rule for button enablement
                 if (fileSelected && passwordEntered) {
                     if (isJsonFile(file)) {
                         isUploadAllowed = true;
                         statusMsg = 'JSON file ready for secure upload.';
-                        statusColor = 'text-emerald-600'; // Updated to Emerald
+                        statusColor = 'text-emerald-600'; 
                     } else {
                         isUploadAllowed = false;
                         statusMsg = '🚫 Only JSON files are allowed for upload. Check file type.';
                         statusColor = 'text-red-500';
-                        disableReason = 'File is not JSON (.json extension or application/json MIME type required).';
                     }
                 } else if (fileSelected && !passwordEntered) {
                     isUploadAllowed = false;
                     statusMsg = 'Please enter the password (API Key) to enable submission.';
                     statusColor = 'text-yellow-600';
-                    disableReason = 'Missing password (X-Api-Key).';
                 } else if (!fileSelected && passwordEntered) {
                     isUploadAllowed = false;
                     statusMsg = 'Please select a JSON file.';
                     statusColor = 'text-yellow-600';
-                    disableReason = 'Missing file selection.';
-                } else {
-                    disableReason = 'Missing file and password.';
                 }
                 
                 submitButton.disabled = !isUploadAllowed;
                 displayStatus(statusMsg, statusColor);
 
+                // Update the file status line
                 if (file) {
                     const fileSize = (file.size / 1024 / 1024).toFixed(2);
                     const fileTypeValid = isJsonFile(file);
                     
-                    fileNameDisplay.textContent = `${fileTypeValid ? '✅' : '❌'} File Selected: ${file.name} (${fileSize} MB)`;
-                    // Updated to Emerald class
-                    fileNameDisplay.classList.remove('text-gray-600', 'text-red-500', 'text-emerald-500');
-                    fileNameDisplay.classList.add(fileTypeValid ? 'text-emerald-500' : 'text-red-500', 'font-bold');
+                    fileStatusDisplay.textContent = `${fileTypeValid ? '✅' : '❌'} File Selected: ${file.name} (${fileSize} MB)`;
+                    
+                    fileStatusDisplay.classList.remove('text-gray-600', 'text-red-500', 'text-emerald-500');
+                    fileStatusDisplay.classList.add(fileTypeValid ? 'text-emerald-500' : 'text-red-500', 'font-bold');
                 } else {
-                    fileNameDisplay.textContent = 'Only one JSON file is allowed for upload.';
-                    fileNameDisplay.classList.remove('text-emerald-500', 'font-bold', 'text-red-500');
-                    fileNameDisplay.classList.add('text-gray-600');
-                }
-
-                if (!isUploadAllowed) {
-                    console.warn(`[UPLOAD BLOCKED] Button is disabled. Reason: ${disableReason}`);
+                    fileStatusDisplay.textContent = 'Only one JSON file is allowed for upload.';
+                    fileStatusDisplay.classList.remove('text-emerald-500', 'font-bold', 'text-red-500');
+                    fileStatusDisplay.classList.add('text-gray-600');
                 }
             }
 
+            // Only attach listeners if the form and inputs exist
+            if (form && fileInput && passwordInput && submitButton) {
+                fileInput.addEventListener('change', updateUIState);
+                passwordInput.addEventListener('input', updateUIState);
 
-            fileInput.addEventListener('change', updateUIState);
-            passwordInput.addEventListener('input', updateUIState);
 
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
 
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const file = fileInput.files[0];
-                const password = passwordInput.value.trim();
-                
-                // Final validation check before attempting network call
-                if (!file || !password || !isJsonFile(file)) {
-                    displayStatus('Submission blocked. Ensure a JSON file is selected and password is entered.', 'text-red-500');
-                    return;
-                }
-
-                // 2. State & UI Update (Loading)
-                submitButton.disabled = true;
-                submitButton.innerHTML = `<svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...`;
-                
-                resultDiv.textContent = 'Processing request...';
-                resultDiv.classList.remove('loaded', 'text-red-700', 'text-emerald-700', 'bg-red-200/50', 'bg-emerald-200/50');
-                resultDiv.classList.add('glass-result');
-
-                // --- CORE LOGIC: DIRECT UPLOAD ---
-                // Updated to Emerald
-                displayStatus('Sending JSON file to server...', 'text-emerald-500');
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    const response = await fetchWithBackoff(targetUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Api-Key': password 
-                        }
-                    });
-
-                    const responseText = await response.text();
-                    let isSuccess = response.ok;
-
-                    if (isSuccess) {
-                        // Updated to Emerald
-                        displayStatus(`Success! Status: ${response.status} ${response.statusText}`, 'text-emerald-500');
-                        
-                        // Try to format the response text if it looks like JSON
-                        let displayContent = responseText || 'No body received from server.';
-                        try {
-                            displayContent = JSON.stringify(JSON.parse(responseText), null, 2);
-                        } catch (e) {
-                            // If it's not JSON, use raw text but still treat as success if status is ok
-                        }
-                        setJsonResult(displayContent, true);
-
-                    } else {
-                        let errorMsg = `Error! Status: ${response.status} ${response.statusText}.`;
-                        if (response.status === 401) {
-                            errorMsg += ' Check your password/API Key.';
-                        }
-                        displayStatus(errorMsg, 'text-red-500');
-                        setJsonResult(responseText || 'Server returned an error with no response body.', false);
+                    const file = fileInput.files[0];
+                    const password = passwordInput.value.trim();
+                    
+                    if (!file || !password || !isJsonFile(file)) {
+                        displayStatus('Submission blocked. Ensure a JSON file is selected and password is entered.', 'text-red-500');
+                        return;
                     }
-                } catch (error) {
-                    console.error('Fetch Error:', error);
-                    displayStatus(`Network Error: Could not reach the server. ${error.message}`, 'text-red-500');
-                    setJsonResult('A network error occurred. Check the console for details.', false);
-                }
-                
-                // 3. Final UI Update 
-                submitButton.textContent = 'Send JSON File';
-                document.getElementById('loadingSpinner').classList.add('hidden');
-                updateUIState();
-            });
+
+                    // 2. State & UI Update (Loading)
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = `<svg id="loadingSpinner" class="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...`;
+                    
+                    // Added more explicit check for resultDiv right before manipulation
+                    if (resultDiv) { 
+                        resultDiv.textContent = 'Processing request...';
+                        // This is the line that was failing:
+                        resultDiv.classList.remove('loaded', 'text-red-700', 'text-emerald-700', 'bg-red-200/50', 'bg-emerald-200/50');
+                        resultDiv.classList.add('glass-result');
+                    }
+
+                    // --- CORE LOGIC: DIRECT UPLOAD ---
+                    displayStatus('Sending JSON file to server...', 'text-emerald-500');
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const response = await fetchWithBackoff(targetUrl, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Api-Key': password 
+                            }
+                        });
+
+                        const responseText = await response.text();
+                        let isSuccess = response.ok;
+
+                        if (isSuccess) {
+                            displayStatus(`Success! Status: ${response.status} ${response.statusText}`, 'text-emerald-500');
+                            
+                            let displayContent = responseText || 'No body received from server.';
+                            try {
+                                displayContent = JSON.stringify(JSON.parse(responseText), null, 2);
+                            } catch (e) {
+                                // If it's not JSON, use raw text but still treat as success if status is ok
+                            }
+                            setJsonResult(displayContent, true);
+
+                        } else {
+                            let errorMsg = `Error! Status: ${response.status} ${response.statusText}.`;
+                            if (response.status === 401) {
+                                errorMsg += ' Check your password/API Key.';
+                            }
+                            displayStatus(errorMsg, 'text-red-500');
+                            setJsonResult(responseText || 'Server returned an error with no response body.', false);
+                        }
+                    } catch (error) {
+                        console.error('Fetch Error:', error);
+                        displayStatus(`Network Error: Could not reach the server. ${error.message}`, 'text-red-500');
+                        setJsonResult('A network error occurred. Check the console for details.', false);
+                    }
+                    
+                    // 3. Final UI Update 
+                    submitButton.textContent = 'Send JSON File';
+                    document.getElementById('loadingSpinner')?.classList.add('hidden'); // Optional chaining for safety
+                    updateUIState();
+                });
+            } else {
+                console.error("Form or core input elements are missing. Cannot initialize form listeners.");
+            }
+
 
             // --- Dynamic Shadow, Rotation, and Glare Logic ---
             document.addEventListener('mousemove', (e) => {
-                // Get bounds of the body/viewport
-                const bodyRect = document.body.getBoundingClientRect();
-                
-                // Get bounds of the glass card
+                // Add null checks for elements accessed here
+                if (!glassCard || !profilePhoto || !glareEffect) return;
+
                 const cardRect = glassCard.getBoundingClientRect();
+                const isInCard = e.clientX >= cardRect.left && e.clientX <= cardRect.right &&
+                                 e.clientY >= cardRect.top && e.clientY <= cardRect.bottom;
+
+                if (!isInCard) { return; }
+
                 const centerX = cardRect.left + cardRect.width / 2;
                 const centerY = cardRect.top + cardRect.height / 2;
 
-                // Normalized position relative to the center of the card (-0.5 to 0.5)
                 const normalizedX = (e.clientX - centerX) / cardRect.width;
                 const normalizedY = (e.clientY - centerY) / cardRect.height;
                 
-                // --- 1. Card Rotation (3D Effect) ---
-                const rotateY = -normalizedX * 6; // Slight horizontal rotation
-                const rotateX = normalizedY * 6;   // Slight vertical rotation
+                const rotateY = -normalizedX * 6; 
+                const rotateX = normalizedY * 6;   
 
-                // --- 2. Dynamic Shadow (General Light Source from Top-Left) ---
-                // Shadow moves in the direction AWAY from the assumed light source (top-left) 
                 const shadowOffsetX = -normalizedX * SHADOW_INTENSITY; 
                 const shadowOffsetY = -normalizedY * SHADOW_INTENSITY;
 
                 glassCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
                 
-                // The dynamic shadow direction is reversed for a more appealing effect
                 glassCard.style.boxShadow = `
-                    ${shadowOffsetX}px ${shadowOffsetY}px 40px 0 rgba(0, 0, 0, 0.4), /* Dynamic Shadow */
-                    0 8px 32px 0 rgba(255, 255, 255, 0.15) /* Static Glass Shadow */
+                    ${shadowOffsetX}px ${shadowOffsetY}px 40px 0 rgba(0, 0, 0, 0.4), 
+                    0 8px 32px 0 rgba(255, 255, 255, 0.15) 
                 `;
 
-                // --- 3. Profile Photo Parallax ---
                 const photoTranslateX = normalizedX * PHOTO_INTENSITY;
                 const photoTranslateY = normalizedY * PHOTO_INTENSITY;
                 
                 profilePhoto.style.transform = `translate3d(${photoTranslateX}px, ${photoTranslateY}px, 0)`;
                 
-                // Adjusting the photo's internal shadow to reflect the card's general light direction
                 profilePhoto.style.boxShadow = `
-                    ${-photoTranslateX * 2}px ${-photoTranslateY * 2}px 20px rgba(0, 0, 0, 0.4), /* Dynamic Shadow */
+                    ${-photoTranslateX * 2}px ${-photoTranslateY * 2}px 20px rgba(0, 0, 0, 0.4), 
                     0 0 0 4px rgba(255, 255, 255, 0.5), 
                     0 4px 10px rgba(0, 0, 0, 0.1) 
                 `;
 
-                // --- 4. Dynamic Glare/Highlight ---
-                // The glare moves across the surface based on mouse position.
                 const glareX = normalizedX * GLARE_INTENSITY; 
                 const glareY = normalizedY * GLARE_INTENSITY;
                 
@@ -505,7 +763,8 @@
             });
             // --- End Dynamic Effects Logic ---
 
-            // Initial UI setup
+            // Initial setup
+            setWeather(currentWeather);
             updateUIState();
         });
     </script>
